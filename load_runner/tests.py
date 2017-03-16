@@ -17,12 +17,13 @@ import json
 import random
 import os
 import time
+import socket
 
 from load_runner import remote
 from load_runner import settings
 from load_runner.data import iperf3
 from load_runner.data import ping
-
+from load_runner.data import cpuload
 
 def random_pairs(clients, servers, extend=False):
     clients = list(clients)
@@ -43,14 +44,28 @@ def random_pairs(clients, servers, extend=False):
 
 def iperf_pairs_zmq(test, output_file):
     tenants = test.tenants
-
+    hvs = []
     kill_commands = []
     run_kill = ['killall', 'iperf3']
+
+    hvs_commands = []
+
+    collectl_start = ['collectl', '--all']
+    w_stat = ['/usr/bin/w']
+    cpu_stat = ['/usr/bin/screen', '-d', '-m','-S', 'cpu-monit', '/root/cpu-monit.sh', test.args.get('hv_monit', [])]
     for group in test.group_servers_by_role().values():
         for server in group:
             kill_commands.append((server.management_ip, run_kill))
+            if server.hypervisor not in hvs:
+                hvs.append(server.hypervisor)
+                hvs_commands.append((server.hypervisor, cpu_stat))
     remote.run_commands(
         kill_commands, timeout=test.args.get('server_timeout', 30))
+#Moved right after run ipoerf
+    #hvs_results = remote.run_commands(
+     #   hvs_commands, [],
+     #   test.args.get('client_timeout', 600))
+    # print hvs_results
 
     # Prepare servers...
     clients = {}
@@ -67,6 +82,12 @@ def iperf_pairs_zmq(test, output_file):
             server_commands.append((server.management_ip, run_server))
     server_results = remote.run_commands(
         server_commands, [], test.args.get('server_timeout', 30))
+   
+    #Run CPU stat  collection
+    hvs_results = remote.run_commands(
+        hvs_commands, [],
+        test.args.get('client_timeout', 600))
+    print hvs_results
 
     # Run clients...
     client_commands = []
@@ -77,13 +98,31 @@ def iperf_pairs_zmq(test, output_file):
                       '8200', '--json']
         run_client.extend(additional_args)
         client_commands.append((client.management_ip, run_client))
-
     print 'Running iperf...'
     client_results = remote.run_commands(
         client_commands, iperf3.Iperf3Stats(test),
         test.args.get('client_timeout', 600))
 
     client_results.output(output_file)
+   #added by PG
+    #pg_client_commands = []
+    #pg_command=['cat','/tmp/results.txt']
+    #pg_client_commands.append(('1.1.1.52', pg_command))
+
+    #Get CPU stats from Hypervisors
+    hv_results = []
+    hvs_commands = []
+    get_cpu_stat=['cat','/tmp/results.txt']
+    print "collecting CPU util from HV ..."
+    for srv in hvs:
+        hvs_commands.append((srv, get_cpu_stat))
+    hv_results = remote.run_commands(
+        hvs_commands,cpuload.CPUStats(),
+        test.args.get('client_timeout', 600))
+   # TODO move to output function 
+    for srv in hvs:
+        print socket.gethostbyaddr(srv)[0]
+        hv_results.output(output_file)
 
 
 def ping_pairs(test, output_file):

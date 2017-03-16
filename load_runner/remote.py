@@ -40,9 +40,12 @@ def run_commands(commands, result=None, timeout=600):
 
     grouped_commands = {}
     for address, command in commands:
+        #TODO delete print 
+        print "address {}, command{}" .format (address,command)
         grouped_commands.setdefault(address, []).append(
             [str(c) for c in command])
 
+ 
     for address, commands in grouped_commands.items():
         bcast_socket.connect('tcp://%s:5501' % address)
         cmd_socket = context.socket(zmq.REQ)
@@ -57,14 +60,16 @@ def run_commands(commands, result=None, timeout=600):
         # Keep broadcasting 'start' command (in case some client missed it)
         bcast_socket.send_string('start')
         for socket, event in poll.poll(POLL_TIMEOUT):
+#            print "socket {}, event {}" .format(socket,event)
             if event & zmq.POLLIN:
                 address = sockets.pop(socket, None)
                 if address is None:
                     continue
                 response = socket.recv_json()
                 response['address'] = address
+#                print "response {}" .format(response)
                 # TODO: store RAW response in persistent storage
                 if result is not None:
                     result.append(response)
-
+    #print "result: {}" .format(result)
     return result

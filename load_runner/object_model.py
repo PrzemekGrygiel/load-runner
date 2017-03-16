@@ -110,9 +110,9 @@ class LoadRunner(object):
                 print "Test failed:", test.name
                 traceback.print_exc()
             finally:
-                # try:
+                #try:
                 #    test.teardown_environment()
-                # except Exception:
+                #except Exception:
                 #    print "Teardown for test '%s' failed!" % test.name
                 #    traceback.print_exc()
                 pass
@@ -293,9 +293,7 @@ class Tenant(BaseObject):
             network.remove()
 
     def initialize(self):
-        print 'initialize() called.'
         deadline = time.time() + settings.ACTIVATION_TIMEOUT
-        active_servers = []
         while time.time() < deadline:
             active_servers = api_helpers.get_servers(self.tenant_id)
             if all(s.status in ('ACTIVE', 'ERROR')
@@ -341,9 +339,12 @@ class Tenant(BaseObject):
             if data_ip is None:
                 continue
             self.available_servers.pop(i)
-            mgmt = server.addresses[settings.MANAGEMENT_NET_NAME]
+            mgmt = server.addresses[settings.MANAGEMENT_NAME]
             print "finished allocation"
-            return server.id, data_ip, mgmt[0]['addr']
+            hv_name = server._info['OS-EXT-SRV-ATTR:hypervisor_hostname']
+            hv = socket.gethostbyname(hv_name)
+            print server._info['OS-EXT-SRV-ATTR:hypervisor_hostname'], hv
+            return server.id, data_ip, mgmt[0]['addr'], hv
         print "spawning new server"
         # If no luck, then allocate new server
         return api_helpers.create_server(self.tenant_id, network_id, name,
@@ -371,6 +372,7 @@ class Network(BaseObject):
         # Create servers
         self.servers = []
         test_name = self.tenant.test.name
+        #print data['servers']
         for server_desc in data['servers']:
             floating_ip = server_desc.get('floating_ip')
             availability_zones = server_desc.get('availability_zones')
@@ -392,6 +394,7 @@ class Network(BaseObject):
                 server_name = server_prefix + os.urandom(3).encode('hex')
                 server = Server(self, server_name, role, avail_zone,
                                 floating_ip)
+                #print server
                 self.servers.append(server)
 
     def get_children(self):
@@ -488,7 +491,7 @@ class Network(BaseObject):
         not_ready = set(self.servers) - set(servers_ready)
         for s in not_ready:
             print 'Not responding:', s.management_ip
-
+        print servers_ready
         return servers_ready
 
 
@@ -504,6 +507,7 @@ class Server(object):
         self.private_ip = None
         self.management_ip = None
         self.start_time = None
+        self.hypervisor = None
 
     def prepare_environment(self):
         tenant = self.network.tenant
@@ -512,7 +516,8 @@ class Server(object):
         server_info = tenant.allocate_server(network_id, self.name, key_name,
                                              self.availability_zone,
                                              self.floating_ip)
-        self.server_id, self.private_ip, self.management_ip = server_info
+        print server_info
+        self.server_id, self.private_ip, self.management_ip, self.hypervisor = server_info
         self.start_time = time.time()
 
     def remove(self):

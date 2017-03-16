@@ -2,11 +2,12 @@ tests:
   - name: iperf_smoke_test
     procedure: load_runner.tests.iperf_pairs_zmq
     args:
-      iperf_args: ['-t', '3']
+      iperf_args: ['-t', '5']
+      hv_monit: 5
     tenants:
-      - name: iperf_smoke_test
+      - name: test1
         networks:
-          - name: private
+          - name: test1
             floating_ip: public
             servers:
               - role: server

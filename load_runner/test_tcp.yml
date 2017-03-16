@@ -1,5 +1,7 @@
 username: root
 keyfile: /home/ubuntu/ssh_key2
+#password: r00tme
+#keyname: alex
 tests:
   - name: single_1thd_512b_tcp_small
     procedure: load_runner.tests.iperf_pairs_zmq

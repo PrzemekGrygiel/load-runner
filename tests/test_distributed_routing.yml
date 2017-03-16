@@ -1,5 +1,7 @@
 username: root
 keyfile: /home/ubuntu/ssh_key2
+#password: r00tme
+#keyname: alex
 tests:
   - name: route_6060_4thd_1470b_tcp_samerack
     procedure: load_runner.tests.iperf_pairs_zmq

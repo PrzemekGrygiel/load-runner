@@ -1,35 +1,21 @@
-# Copyright 2014 Symantec.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-CONTROLLER_IP = '172.16.0.2'
-OS_AUTH_URL = 'http://%s:5000/v2.0/' % CONTROLLER_IP
-OS_SERVICE_ENDPOINT = 'http://%s:35357/v2.0/' % CONTROLLER_IP
+CONTROLLER_IP = '10.87.35.19'
+OS_AUTH_URL = 'http://10.87.35.19:5000/v2.0'
+OS_SERVICE_ENDPOINT = 'http://10.87.35.19:35357/v2.0'
 OS_USERNAME = 'admin'
 OS_TENANT = 'admin'
-OS_PASSWORD = 'admin'
-OS_TOKEN = 'PKUiCQHi'
+OS_PASSWORD = '22321eeb8b9c4dd0'
+OS_TOKEN = '2e186e87ac7243b69ac910daf30ed75e'
 SPAWN_DELAY = 0
 ACTIVATION_TIMEOUT = 120
-BOOT_TIMEOUT = 300
+BOOT_TIMEOUT = 120
 TEST_TIMEOUT = 120
 
-MANAGEMENT_NETWORK_ID = '9398a44e-c170-4e50-affc-e4f321a67069'
-MANAGEMENT_NET_NAME = 'mgmtnet'
-MANAGEMENT_CIDR = '192.168.111.0/24'
+MANAGEMENT_NETWORK_ID = 'd4a748cd-4df7-45db-8aa8-c66d68331010'
+MANAGEMENT_NAME = 'Private-1'
+MANAGEMENT_CIDR = '1.1.1.0/24'
 PRIVATE_CIDR = '192.168.0.0/24'
-FLAVOR_ID = '6'
-IMAGE_ID = '0e6cfb31-5bd3-420f-b9a9-9494d5f3907a'
+FLAVOR_ID = '3'
+IMAGE_ID = 'fa783db6-013f-4fa6-b0e8-19643bc3f575'
 ROOT_DIR = '/tmp'
 
 UPDATE_NEUTRON_QUOTAS = False  # Set to False for Contrail testing

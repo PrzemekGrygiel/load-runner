@@ -28,21 +28,19 @@ neutron_client = None
 nova_clients = {}
 servers = {}
 
-
 class ServersSpawner:
     usable_availability_zones = []
     heuristics = [1, 1, 1, 1, 10, 20]
     instances = []
     current_heur = 0
-
+ 
     @classmethod
-    def spawn_server(cls, name, tenant_id, network_id, key_name,
-                     availability_zone, scheduler_hints):
+    def spawn_server(cls, tenant_id, network_id, key_name, availability_zone, scheduler_hints):
         client = get_nova_client(tenant_id)
         server = client.servers.create(
             name, settings.IMAGE_ID, settings.FLAVOR_ID,
             nics=[{'net-id': settings.MANAGEMENT_NETWORK_ID},
-                  {'net-id': network_id}],
+                 {'net-id': network_id}],
             key_name=key_name,
             availability_zone=availability_zone,
             scheduler_hints=scheduler_hints)
@@ -269,21 +267,14 @@ def create_server_dhcp(tenant_id, network_id, name, key_name,
         t = time.time()
         server = client.servers.get(server.id)
         if server.status == 'ERROR':
-            raise Exception("Server %s failed to spawn" % server.id)
+            raise Exception("Server %s failed to spawn"%server.id)
         if hasattr(server, 'networks'):
             try:
                 server_nets = server.networks
-                management_ip = server_nets.pop(
-                    settings.MANAGEMENT_NET_NAME)[0]
+                management_ip = server_nets.pop(settings.MANAGEMENT_NAME)[0]
                 private_ip = server_nets.values()[0][0]
-                #FIXME
-                #server_ips = server_nets.pop(
-                #    settings.MANAGEMENT_NET_NAME)
-                #management_ip = server_ips[0]
-                #private_ip = server_ips[1]
                 break
             except Exception, e:
-                print e.message
                 pass
         time.sleep(0.1)
         print (time.time() - t)
@@ -294,7 +285,12 @@ def create_server_dhcp(tenant_id, network_id, name, key_name,
             fip = create_free_floatingip(tenant_id, floating_ip)
         assign_floating_ip(fip, server.id, network_id)
 
+    #server_nets = server.networks
+    #management_ip = server_nets.pop(settings.MANAGEMENT_NAME)[0]
+    #private_ip = server_nets.values()[0][0]
     print "finished creating server"
+    print "{} {} {}" .format(server.id, private_ip, management_ip)
+    print server._info
     return server.id, private_ip, management_ip
 
 
@@ -355,7 +351,8 @@ def remove_router_interface(router_id, subnet_id):
 
 def get_servers(tenant_id):
     client = get_nova_client(tenant_id)
-    return [s for s in client.servers.list(detailed=True)]
+    return [s for s in client.servers.list(detailed=True)
+            if s.status == 'ACTIVE']
 
 
 def ensure_default_sg_state(tenant_id):
@@ -398,7 +395,6 @@ def get_ports(tenant_id):
         result.setdefault(port['device_id'], []).append(port['network_id'])
     return result
 
-
 def get_network_servers(network_id):
     client = get_neutron_client()
     result = set()
@@ -414,16 +410,14 @@ def get_network_servers(network_id):
 
 fips = {}
 
-
 def get_free_floatingip(tenant_id, network_id):
     global fips
     client = get_neutron_client()
-    if not tenant_id + network_id in fips:
-        fips[tenant_id + network_id] = client.list_floatingips(
-            tenant_id=tenant_id)['floatingips']
-    for fip in fips[tenant_id + network_id]:
+    if not fips.has_key(tenant_id+network_id):
+        fips[tenant_id+network_id] = client.list_floatingips(tenant_id=tenant_id)['floatingips']
+    for fip in fips[tenant_id+network_id]:
         if fip['port_id'] is None:
-            fips[tenant_id + network_id].remove(fip)
+            fips[tenant_id+network_id].remove(fip)
             return fip
     return None
 
@@ -452,7 +446,6 @@ def assign_floating_ip(fip, server_id, network_id):
 
 
 all_ports = {}
-
 
 def get_data_ip(server_id, network_id, floating_ip):
     x = time.time()
